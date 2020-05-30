@@ -603,7 +603,11 @@ public class CallsManager extends Call.ListenerBase
         intentFilter.addAction(SystemContract.ACTION_BLOCK_SUPPRESSION_STATE_CHANGED);
         context.registerReceiver(mReceiver, intentFilter);
         mGraphHandlerThreads = new LinkedList<>();
-        QtiCarrierConfigHelper.getInstance().setup(mContext);
+        try {
+            QtiCarrierConfigHelper.getInstance().setup(mContext);
+        } catch (NoClassDefFoundError ex) {
+            // Do nothing
+        }
     }
 
     public void setIncomingCallNotifier(IncomingCallNotifier incomingCallNotifier) {
@@ -833,10 +837,14 @@ public class CallsManager extends Call.ListenerBase
             return true;
         }
 
-        final boolean isLowBattery = extras.getBoolean(QtiCallConstants.LOW_BATTERY_EXTRA_KEY,
-                false);
-        Log.d(TAG, "isIncomingVideoCallAllowed: lowbattery = " + isLowBattery);
-        return !isLowBattery;
+        try {
+            final boolean isLowBattery = extras.getBoolean(QtiCallConstants.LOW_BATTERY_EXTRA_KEY,
+                    false);
+            Log.d(TAG, "isIncomingVideoCallAllowed: lowbattery = " + isLowBattery);
+            return !isLowBattery;
+        } catch (NoClassDefFoundError ex) {
+            return true;
+        }
     }
 
     private static boolean isIncomingVideoCall(Call call) {
@@ -1457,6 +1465,22 @@ public class CallsManager extends Call.ListenerBase
         return reusedCall;
     }
 
+    private boolean isCarrierConfigEnabled(int phoneId, Context context, String config) {
+        try {
+            return QtiImsExtUtils.isCarrierConfigEnabled(phoneId, context, config);
+        } catch (NoClassDefFoundError ex) {
+            return false;
+        }
+    }
+
+    private boolean isRttSupportedOnVtCalls(int phoneId, Context context) {
+        try {
+            return QtiImsExtUtils.isRttSupportedOnVtCalls(phoneId, context);
+        } catch (NoClassDefFoundError ex) {
+            return false;
+        }
+    }
+
     /**
      * Kicks off the first steps to creating an outgoing call.
      *
@@ -1790,7 +1814,7 @@ public class CallsManager extends Call.ListenerBase
                             callToUse.getTargetPhoneAccount()));
                     boolean isRttSettingOn = isRttSettingOn(phoneAccountHandle);
                     if (!isVoicemail && (!VideoProfile.isVideo(callToUse.getVideoState())
-                            || QtiImsExtUtils.isRttSupportedOnVtCalls(
+                            || isRttSupportedOnVtCalls(
                             phoneId, mContext))
                             && (isRttSettingOn || (extras != null
                             && extras.getBoolean(TelecomManager.EXTRA_START_CALL_WITH_RTT,
@@ -4487,7 +4511,7 @@ public class CallsManager extends Call.ListenerBase
         PhoneAccountHandle accountHandle = call.getTargetPhoneAccount();
         int phoneId = SubscriptionManager.getPhoneId(
                 mPhoneAccountRegistrar.getSubscriptionIdForPhoneAccount(accountHandle));
-        return QtiImsExtUtils.isCarrierConfigEnabled(phoneId, mContext,
+        return isCarrierConfigEnabled(phoneId, mContext,
                 "config_enable_video_crbt") && getDialingCall() != null
             && !VideoProfile.isTransmissionEnabled(videoState)
             && VideoProfile.isReceptionEnabled(videoState);

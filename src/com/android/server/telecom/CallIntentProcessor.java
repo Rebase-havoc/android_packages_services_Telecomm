@@ -151,11 +151,6 @@ public class CallIntentProcessor {
             clientExtras.putString(TelecomManager.EXTRA_CALL_SUBJECT, callsubject);
         }
 
-        final int callDomain = intent.getIntExtra(
-                QtiCallConstants.EXTRA_CALL_DOMAIN, QtiCallConstants.DOMAIN_AUTOMATIC);
-        Log.d(CallIntentProcessor.class, "callDomain = " + callDomain);
-        clientExtras.putInt(QtiCallConstants.EXTRA_CALL_DOMAIN, callDomain);
-
         final int videoState = intent.getIntExtra( TelecomManager.EXTRA_START_CALL_WITH_VIDEO_STATE,
                 VideoProfile.STATE_AUDIO_ONLY);
         clientExtras.putInt(TelecomManager.EXTRA_START_CALL_WITH_VIDEO_STATE, videoState);
@@ -208,6 +203,15 @@ public class CallIntentProcessor {
                 }
             }
         });
+
+        try {
+            final int callDomain = intent.getIntExtra(
+                    QtiCallConstants.EXTRA_CALL_DOMAIN, QtiCallConstants.DOMAIN_AUTOMATIC);
+            Log.d(CallIntentProcessor.class, "callDomain = " + callDomain);
+            clientExtras.putInt(QtiCallConstants.EXTRA_CALL_DOMAIN, callDomain);
+        } catch (NoClassDefFoundError ex) {
+            // Do nothing
+        }
     }
 
     /**
